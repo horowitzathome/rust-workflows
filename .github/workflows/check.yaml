@@ -4,8 +4,8 @@ on:
       rust-version:
         type: string
         required: false
-        default: stable
-        description: rust version to use for checks (stable is default)
+        default: nightly
+        description: rust version to use for checks
 
 jobs:
   check:
