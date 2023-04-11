@@ -132,7 +132,7 @@ jobs:
         if: ${{ inputs.cache-type == 'registry' && inputs.build-args == '' }}
         with:
           build-args: |
-            TARGET=--target ${{ matrix.target }}
+            TARGET=${{ matrix.target }}
           platforms: ${{ matrix.platform }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
