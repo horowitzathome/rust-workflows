@@ -55,13 +55,16 @@ on:
     outputs:
       sha-tag:
         description: image short sha tag
-        value: ${{ jobs.build.outputs.sha-tag }}
+        value: ${{ jobs.pre-build.outputs.sha-tag }}
 
 jobs:
-  build:
+  pre-build:
+    name: "Doing job pre-build"
     runs-on: ubuntu-latest
     outputs:
       sha-tag: ${{ steps.tags.outputs.sha-tag }}
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
     steps:
       - name: Check out
         uses: actions/checkout@v3
@@ -98,6 +101,10 @@ jobs:
             type=semver,pattern={{major}}
             type=edge
             type=sha
+      - name: Output Tags and Labels
+        run: |
+          echo "::set-output name=tags::${{ steps.meta.outputs.tags }}"    
+          echo "::set-output name=labels::${{ steps.meta.outputs.labels }}"
       - name: Output short tag
         id: tags
         run: echo "sha-tag=sha-$(echo ${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }} | cut -c1-7)" >> "${GITHUB_OUTPUT}"
@@ -114,14 +121,21 @@ jobs:
           registry: ${{ inputs.registry }}
           username: ${{ secrets.container-registry-username }}
           password: ${{ secrets.container-registry-password }}
+
+  build:
+    name: "Doing job build"
+    runs-on: ubuntu-latest
+    needs:
+      - "pre-build"
+    steps:
       - name: Build and push image to container registry using registry cache
         uses: docker/build-push-action@v4.0.0
         if: ${{ inputs.cache-type == 'registry' && inputs.build-args == '' }}
         with:
           platforms: ${{ inputs.platforms }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ needs.pre-build.outputs.tags }}
+          labels: ${{ needs.pre-build.outputs.labels }}
           cache-from: type=registry,ref=${{ inputs.image }}:buildcache
           cache-to: type=registry,ref=${{ inputs.image }}:buildcache,mode=max
       - name: Build and push image with build args ${{ inputs.build-args }} to container registry using registry cache
@@ -131,8 +145,8 @@ jobs:
           build-args: ${{ inputs.build-args }}
           platforms: ${{ inputs.platforms }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ needs.pre-build.outputs.tags }}
+          labels: ${{ needs.pre-build.outputs.labels }}
           cache-from: type=registry,ref=${{ inputs.image }}:buildcache
           cache-to: type=registry,ref=${{ inputs.image }}:buildcache,mode=max
       - name: Build and push image to container registry using gha cache
@@ -141,8 +155,8 @@ jobs:
         with:
           platforms: ${{ inputs.platforms }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ needs.pre-build.outputs.tags }}
+          labels: ${{ needs.pre-build.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build and push image with build args ${{ inputs.build-args }} to container registry using gha cache
@@ -152,7 +166,7 @@ jobs:
           build-args: ${{ inputs.build-args }}
           platforms: ${{ inputs.platforms }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ needs.pre-build.outputs.tags }}
+          labels: ${{ needs.pre-build.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
