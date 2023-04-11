@@ -100,20 +100,15 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}} 
             type=edge
-            type=sha
-      - name: Output Tags and Labels
-        id: create_env_file
-        run: |
-          echo "tags=${{ steps.meta.outputs.tags }}"" >> ${{github.workspace}}/env_file
-          echo "labels=${{ steps.meta.outputs.labels }}"" >> ${{github.workspace}}/env_file
-        env:
-          ENV_FILE: ${{github.workspace}}/env_file    
+            type=sha  
       - name: Output short tag
         id: tags
         run: |
           echo "sha-tag=sha-$(echo ${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }} | cut -c1-7)" >> "${GITHUB_OUTPUT}"
           echo "tags=${{ steps.meta.outputs.tags }}" >> "${GITHUB_OUTPUT}"
           echo "labels=${{ steps.meta.outputs.labels }}" >> "${GITHUB_OUTPUT}"
+          echo "GITHUB_OUTPUT = ... "
+          echo "${GITHUB_OUTPUT}"
 
   build:
     name: "Doing job build"
