@@ -58,7 +58,23 @@ on:
         value: ${{ jobs.build.outputs.sha-tag }}
 
 jobs:
+  get-tag:
+    name: "Get Tag From Package Version"
+    runs-on: "ubuntu-latest"
+    outputs:
+      pkg-version: ${{ steps.pkg-version.outputs.PKG_VERSION }} 
+    steps:
+      - name: "Check out the repo"
+        uses: actions/checkout@v3
+      - name: "Get tag"
+        id: "pkg-version"
+        shell: "bash"
+        run: |
+          echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' Cargo.toml) >> $GITHUB_OUTPUT
+
   build:
+    needs:
+      - "get-tag"
     strategy:
       matrix:
         include:
@@ -135,7 +151,7 @@ jobs:
             TARGET=${{ matrix.target }}
           platforms: ${{ matrix.platform }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ inputs.image }}:latest-${{ matrix.target }},${{ inputs.image }}:v${{ needs.get-tag.outputs.pkg-version }}-${{ matrix.target }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ inputs.image }}:buildcache
           cache-to: type=registry,ref=${{ inputs.image }}:buildcache,mode=max
