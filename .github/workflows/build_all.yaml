@@ -58,23 +58,29 @@ on:
         value: ${{ jobs.build.outputs.sha-tag }}
 
 jobs:
-  get-tag:
+  create-tag:
     name: "Get Tag From Package Version"
     runs-on: "ubuntu-latest"
     outputs:
-      pkg-version: ${{ steps.pkg-version.outputs.PKG_VERSION }} 
+      pkg-version: ${{ steps.get-tag.outputs.PKG_VERSION }} 
     steps:
       - name: "Check out the repo"
         uses: actions/checkout@v3
+
       - name: "Get tag"
-        id: "pkg-version"
+        id: "get-tag"
         shell: "bash"
         run: |
           echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' Cargo.toml) >> $GITHUB_OUTPUT
 
+      - name: "Set Tag"
+        shell: "bash"
+        run: |
+          git tag v${{ steps.get-tag.outputs.PKG_VERSION }} && git push --tags
+
   build:
     needs:
-      - "get-tag"
+      - "create-tag"
     strategy:
       matrix:
         include:
@@ -153,7 +159,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ inputs.image }}:latest-${{ matrix.target }}
-            ${{ inputs.image }}:v${{ needs.get-tag.outputs.pkg-version }}-${{ matrix.target }}
+            ${{ inputs.image }}:v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ inputs.image }}:buildcache
           cache-to: type=registry,ref=${{ inputs.image }}:buildcache,mode=max
