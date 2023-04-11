@@ -59,7 +59,20 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # - target: "x86_64-unknown-linux-gnu"
+          #   platform: linux/amd64
+          #  os: "ubuntu-latest"
+          - target: "x86_64-unknown-linux-musl"
+            platform: linux/amd64
+            os: "ubuntu-latest"     
+          # - target: aarch64-unknown-linux-gnu
+          #  os: ubuntu-latest
+          # - target: aarch64-apple-darwin
+          #   os: macos-latest  
+    runs-on:  ${{ matrix.os }}
     outputs:
       sha-tag: ${{ steps.tags.outputs.sha-tag }}
     steps:
@@ -118,7 +131,9 @@ jobs:
         uses: docker/build-push-action@v4.0.0
         if: ${{ inputs.cache-type == 'registry' && inputs.build-args == '' }}
         with:
-          platforms: ${{ inputs.platforms }}
+          build-args: |
+            TARGET=--target ${{ matrix.target }}
+          platforms: ${{ matrix.platform }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -128,7 +143,9 @@ jobs:
         uses: docker/build-push-action@v4.0.0
         if: ${{ inputs.cache-type == 'registry' && inputs.build-args != '' }}
         with:
-          build-args: ${{ inputs.build-args }}
+          build-args: |
+            TARGET=--target ${{ matrix.target }}
+            ${{ inputs.build-args }}
           platforms: ${{ inputs.platforms }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
