@@ -210,7 +210,7 @@ jobs:
           cache-to: type=gha,mode=max 
 
       - name: Extract Rust executeable
-        run: docker cp $(docker create ${{ inputs.image }}:latest-${{ matrix.target }}):/hello-action/hello-action ./hello-action   
+        run: docker cp $(docker create ${{ inputs.image }}:latest-${{ matrix.target }}):/hello-action/hello-action ./hello-action-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
 
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
@@ -218,6 +218,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-tag.outputs.upload_url }}
-          asset_path: ./hello-action
-          asset_name: hello-action:latest-${{ matrix.target }}
+          asset_path: ./hello-action-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
+          asset_name: hello-action-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
           asset_content_type: application/octet-stream    
