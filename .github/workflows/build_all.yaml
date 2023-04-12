@@ -110,7 +110,7 @@ jobs:
           - target: "x86_64-unknown-linux-gnu"
             platform: linux/amd64
             os: "ubuntu-latest"
-            ignore: true
+            if: false
           - target: "x86_64-unknown-linux-musl"
             platform: linux/amd64
             os: "ubuntu-latest"
