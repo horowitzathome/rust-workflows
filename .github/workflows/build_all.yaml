@@ -65,6 +65,7 @@ jobs:
     runs-on: "ubuntu-latest"
     outputs:
       pkg-version: ${{ steps.get-tag.outputs.PKG_VERSION }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: "Check out the repo"
         uses: actions/checkout@v3
@@ -77,6 +78,7 @@ jobs:
 
       - name: Create Release
         uses: actions/create-release@v1
+        id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -205,4 +207,17 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max 
+
+      - name: Extract Rust executeable
+        run: docker cp $(docker create ${{ inputs.image }}:latest-${{ matrix.target }}):/hello-action/hello-action ./hello-action   
+
+      - name: Upload Release Assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-tag.outputs.upload_url }}
+          asset_path: ./hello-action
+          asset_name: hello-action:latest-${{ matrix.target }}
+          asset_content_type: application/octet-stream    
