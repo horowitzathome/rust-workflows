@@ -234,12 +234,15 @@ jobs:
       - name: Extract Rust executeable
         run: docker cp $(docker create ${{ inputs.image }}:latest-${{ matrix.target }}):/${{ needs.create-tag.outputs.exe-name }}/${{ needs.create-tag.outputs.exe-name }} ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
 
+      - name: Compress executable
+        run: zip ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}.zip ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}    
+
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-tag.outputs.upload_url }}
-          asset_path: ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
-          asset_name: ${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
+          asset_path: ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}.zip
+          asset_name: ${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}.zip
           asset_content_type: application/octet-stream    
