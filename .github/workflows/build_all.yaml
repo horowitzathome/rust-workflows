@@ -66,8 +66,6 @@ jobs:
     steps:
       - name: "Check out the repo"
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Get tag"
         id: "get-tag"
@@ -78,7 +76,7 @@ jobs:
       - name: Create Release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.get-tag.outputs.PKG_VERSION }}
           release_name: Release v${{ steps.get-tag.outputs.PKG_VERSION }}
