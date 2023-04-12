@@ -35,11 +35,6 @@ jobs:
           toolchain: ${{ inputs.rust-version }}
           override: true
 
-      - name: Install Postgres client libraries
-        run: |
-          sudo apt-get install libpq-dev
-          cargo install --no-default-features --features "postgres tokio-postgres"    
-
       - name: Set up cargo cache
         uses: actions/cache@v3
         continue-on-error: false
