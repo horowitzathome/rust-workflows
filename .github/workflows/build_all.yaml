@@ -64,9 +64,16 @@ jobs:
     name: "Get Tag From Package Version"
     runs-on: "ubuntu-latest"
     outputs:
+      exe-name: ${{ steps.get-exe.outputs.EXE_NAME }}
       pkg-version: ${{ steps.get-tag.outputs.PKG_VERSION }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
+      - name: "Get name of executeable"
+        id: "get-exe"
+        run: |
+          IFS="/" read -ra parts <<< ${{ inputs.image }}
+          echo EXE_NAME="${parts[1]}" >> $GITHUB_OUTPUT
+
       - name: "Check out the repo"
         uses: actions/checkout@v3
 
@@ -109,6 +116,11 @@ jobs:
     outputs:
       sha-tag: ${{ steps.tags.outputs.sha-tag }}
     steps:
+      - name: Infos
+        run: | 
+          echo "Name of image = ${{ inputs.image }}"   
+          echo "Name of executeable = ${{ needs.create-tag.outputs.exe-name }}" 
+          echo "Name of version = ${{ needs.create-tag.outputs.pkg-version }}" 
       - name: Check out
         uses: actions/checkout@v3
       - name: Lint Dockerfile with ignore
