@@ -21,7 +21,7 @@ on:
         type: string
         required: false
         default: x86_64-musl
-        description: Targets to build images for, valid values are (x86_64-musl,x86_64-gnu,aarch64-gnu,aarch64-darwin)   
+        description: Targets to build images for, valid values are (x86_64-musl,x86_64-gnu,aarch64-gnu,aarch64-darwin)
       cache-type:
         type: string
         required: false
@@ -110,11 +110,10 @@ jobs:
           - target: "x86_64-unknown-linux-gnu"
             platform: linux/amd64
             os: "ubuntu-latest"
-            if: contains(workflow.inputs.target, 'x86_64-gnu')
+            ignore: true
           - target: "x86_64-unknown-linux-musl"
             platform: linux/amd64
             os: "ubuntu-latest"
-            if: contains(workflow.inputs.target, 'x86_64-musl')
           # - target: aarch64-unknown-linux-gnu
           #  os: ubuntu-latest
           # - target: aarch64-apple-darwin
@@ -124,10 +123,10 @@ jobs:
       sha-tag: ${{ steps.tags.outputs.sha-tag }}
     steps:
       - name: Infos
-        run: | 
+        run: |
           echo "Name of image = ${{ inputs.image }}"   
           echo "Name of executeable = ${{ needs.create-tag.outputs.exe-name }}" 
-          echo "Name of version = ${{ needs.create-tag.outputs.pkg-version }}" 
+          echo "Name of version = ${{ needs.create-tag.outputs.pkg-version }}"
       - name: Check out
         uses: actions/checkout@v3
       - name: Lint Dockerfile with ignore
@@ -236,13 +235,13 @@ jobs:
             ${{ inputs.image }}:v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max 
+          cache-to: type=gha,mode=max
 
       - name: Extract Rust executeable
         run: docker cp $(docker create ${{ inputs.image }}:latest-${{ matrix.target }}):/${{ needs.create-tag.outputs.exe-name }}/${{ needs.create-tag.outputs.exe-name }} ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
 
       - name: Compress executable
-        run: zip ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}.zip ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}    
+        run: zip ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}.zip ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
 
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
@@ -252,4 +251,4 @@ jobs:
           upload_url: ${{ needs.create-tag.outputs.upload_url }}
           asset_path: ./${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}.zip
           asset_name: ${{ needs.create-tag.outputs.exe-name }}-v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}.zip
-          asset_content_type: application/octet-stream    
+          asset_content_type: application/octet-stream
