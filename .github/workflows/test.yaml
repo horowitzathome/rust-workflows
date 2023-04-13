@@ -22,7 +22,7 @@ jobs:
           - 5432/tcp
 
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost/mydatabase      
+      DATABASE_URL: postgres://postgres:postgres@localhost/testdb  
 
     steps:
       - name: Check out
@@ -47,6 +47,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Wait for Postgres to start
+        run: |
+          until nc -z localhost 5432; do sleep 1; done            
 
       - name: Test
         run: cargo test -- --nocapture
