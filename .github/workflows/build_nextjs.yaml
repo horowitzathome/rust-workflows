@@ -1,0 +1,154 @@
+name: "Build NextJS"
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        type: string
+        required: true
+        description: container image
+      hadolint-dockerfile:
+        type: string
+        required: false
+        default: Dockerfile
+        description: path to container file
+      hadolint-ignore:
+        type: string
+        required: false
+        default: ""
+        description: rules to be ignored by hadolint
+    outputs:
+      sha-tag:
+        description: image short sha tag
+        value: ${{ jobs.build.outputs.sha-tag }}
+
+jobs:
+  create-tag:
+    name: "Get Tag From Package Version"
+    runs-on: "ubuntu-latest"
+    outputs:
+      exe-name: ${{ steps.get-exe.outputs.EXE_NAME }}
+      pkg-version: ${{ steps.get-tag.outputs.PKG_VERSION }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: "Get name of executeable"
+        id: "get-exe"
+        run: |
+          IFS="/" read -ra parts <<< ${{ inputs.image }}
+          echo EXE_NAME="${parts[1]}" >> $GITHUB_OUTPUT
+
+      - name: "Check out the repo"
+        uses: actions/checkout@v3
+
+      - name: "Install jq"
+        id: "install-jq"
+        run: |
+          apt-get install jq
+
+      - name: "Get tag"
+        id: "get-tag"
+        shell: "bash"
+        run: |
+          echo PKG_VERSION=$(jq -r '.version' package.json}' package.json) >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get-tag.outputs.PKG_VERSION }}
+          release_name: Release v${{ steps.get-tag.outputs.PKG_VERSION }}
+          body: |
+            This is release v${{ steps.get-tag.outputs.PKG_VERSION }}
+          draft: false
+          prerelease: false
+
+  build:
+    needs:
+      - "create-tag"
+    strategy:
+      matrix:
+        include:
+          - target: "x86_64-unknown-linux-gnu"
+            platform: linux/amd64
+            os: "ubuntu-latest"
+          #- target: "x86_64-unknown-linux-musl"
+          #  platform: linux/amd64
+          #  os: "ubuntu-latest"
+          # - target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-latest
+          # - target: aarch64-apple-darwin
+          #   os: macos-latest
+    runs-on: ${{ matrix.os }}
+    outputs:
+      sha-tag: ${{ steps.tags.outputs.sha-tag }}
+    steps:
+      - name: Infos
+        run: |
+          echo "Name of image = ${{ inputs.image }}"   
+          echo "Name of executeable = ${{ needs.create-tag.outputs.exe-name }}" 
+          echo "Name of version = ${{ needs.create-tag.outputs.pkg-version }}"
+
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Lint Dockerfile with ignore
+        if: ${{ inputs.hadolint-ignore != ''}}
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ inputs.hadolint-dockerfile }}
+          ignore: ${{ inputs.hadolint-ignore }}
+
+      - name: Lint Dockerfile
+        if: ${{ inputs.hadolint-ignore == ''}}
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ inputs.hadolint-dockerfile }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2.5.0
+
+      - name: Set up tags
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ inputs.image }}
+          labels: |
+            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ inputs.image }}/main/README.md
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=edge
+            type=sha
+
+      - name: Output short tag
+        id: tags
+        run: echo "sha-tag=sha-$(echo ${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }} | cut -c1-7)" >> "${GITHUB_OUTPUT}"
+
+      - name: Login to Docker Hub container registry
+        uses: docker/login-action@v2.1.0
+        with:
+          username: ${{ secrets.container-registry-username }}
+          password: ${{ secrets.container-registry-password }}
+
+      - name: Build and push image to container registry using registry cache
+        uses: docker/build-push-action@v4.0.0
+        with:
+          build-args: |
+            TARGET=${{ matrix.target }}
+          platforms: ${{ matrix.platform }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ inputs.image }}:latest-${{ matrix.target }}
+            ${{ inputs.image }}:v${{ needs.create-tag.outputs.pkg-version }}-${{ matrix.target }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ inputs.image }}:buildcache
+          cache-to: type=registry,ref=${{ inputs.image }}:buildcache,mode=max
