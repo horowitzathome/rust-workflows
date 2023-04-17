@@ -17,6 +17,13 @@ on:
         required: false
         default: ""
         description: rules to be ignored by hadolint
+    secrets:
+      container-registry-username:
+        required: true
+        description: username for container registry login
+      container-registry-password:
+        required: true
+        description: password for container registry login    
     outputs:
       sha-tag:
         description: image short sha tag
