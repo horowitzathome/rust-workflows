@@ -7,6 +7,16 @@ on:
         type: string
         required: true
         description: container image
+      license:
+        type: string
+        required: false
+        default: MIT
+        description: container image license
+      vendor:
+        type: string
+        required: false
+        default: nozicka.at
+        description: container image vendor  
       hadolint-dockerfile:
         type: string
         required: false
@@ -123,6 +133,8 @@ jobs:
         with:
           images: ${{ inputs.image }}
           labels: |
+            org.opencontainers.image.licenses=${{ inputs.license }}
+            org.opencontainers.image.vendor=${{ inputs.vendor }}
             io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ inputs.image }}/main/README.md
           tags: |
             type=schedule
