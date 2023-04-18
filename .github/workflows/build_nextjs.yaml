@@ -54,8 +54,7 @@ jobs:
       - name: "Get tag"
         id: "get-tag"
         shell: "bash"
-        run: |
-          echo PKG_VERSION=$(jq -r '.version' package.json}' package.json) >> $GITHUB_OUTPUT
+        run: echo PKG_VERSION=$(jq -r '.version' package.json) >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: actions/create-release@v1
