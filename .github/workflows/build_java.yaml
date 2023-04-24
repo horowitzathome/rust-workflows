@@ -191,7 +191,7 @@ jobs:
       - name: Build and push image to container registry using registry cache
         uses: docker/build-push-action@v4.0.0
         with:
-        build-args: |
+          build-args: |
             VERSION=${{ needs.create-tag.outputs.pkg-version }}  
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
