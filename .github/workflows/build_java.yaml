@@ -52,6 +52,11 @@ on:
         required: false
         default: ""
         description: container image build arguments
+      version-file:
+        type: string
+        required: false
+        default: "build.gradle"
+        description: File which contains the version number  
     secrets:
       container-registry-username:
         required: true
@@ -86,7 +91,7 @@ jobs:
         id: "get-tag"
         shell: "bash"
         run: |
-          echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' build.gradle) >> $GITHUB_OUTPUT
+          echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' ${{ inputs.version-file }}) >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: actions/create-release@v1
