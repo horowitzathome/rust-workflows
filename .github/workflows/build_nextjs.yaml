@@ -110,14 +110,14 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Lint Dockerfile with ignore
-        if: ${{ inputs.hadolint-ignore != ''}}
+        if: ${{ inputs.hadolint-ignore != '' && matrix.os != 'macos-latest'}}
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: ${{ inputs.hadolint-dockerfile }}
           ignore: ${{ inputs.hadolint-ignore }}
 
       - name: Lint Dockerfile
-        if: ${{ inputs.hadolint-ignore == ''}}
+        if: ${{ inputs.hadolint-ignore == '' && matrix.os != 'macos-latest'}}
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: ${{ inputs.hadolint-dockerfile }}
